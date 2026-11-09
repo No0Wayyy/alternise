@@ -1,0 +1,15 @@
+# Secrets : ne jamais envoyer sur GitHub
+.env
+.env.local
+.env.*.local
+
+# Dossiers générés
+node_modules/
+.next/
+out/
+build/
+.vercel/
+
+# Divers
+.DS_Store
+*.log
