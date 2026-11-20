@@ -5,9 +5,10 @@
 //   COLLECTE_ROMES=G1602,E1112    essai rapide sur quelques métiers LBA
 //   ADZUNA_JOURS=2                âge maximum des offres Adzuna demandées
 //   ADZUNA_PAGES_MAX=10           nombre maximum d'appels Adzuna par collecte (quota gratuit)
+//   ADZUNA_TOUTES_LES_N_HEURES=4  Adzuna seulement une heure sur N (heure UTC divisible par N)
 import { SECTEURS, type Secteur } from "../../src/lib/secteurs.ts";
 import { chercherOffresLba, transformerOffreLba } from "./lba.ts";
-import { chercherOffresAdzuna, transformerOffreAdzuna } from "./adzuna.ts";
+import { chercherOffresAdzuna, doitLancerAdzuna, planAppelsAdzuna, transformerOffreAdzuna } from "./adzuna.ts";
 import { baseOffres } from "./supabase.ts";
 import { attendre } from "./outils.ts";
 import type { LigneOffre } from "./types.ts";
@@ -67,32 +68,31 @@ async function collecterLba(jeton: string, vueLe: string, romesFiltre: string[] 
 
 async function collecterAdzuna(appId: string, appKey: string, vueLe: string): Promise<Bilan> {
   const jours = Number(process.env.ADZUNA_JOURS ?? 2);
-  let appelsRestants = Number(process.env.ADZUNA_PAGES_MAX ?? 10);
+  const budget = Number(process.env.ADZUNA_PAGES_MAX ?? 10);
   const offres = new Map<string, LigneOffre>();
   const bilan: Bilan = { lignes: [], demandes: 0, echecs: 0, ignorees: 0 };
+  const termines = new Set<string>(); // mots-clés dont on a vu la dernière page
 
-  for (const motCle of ADZUNA_MOTS) {
-    for (let page = 1; appelsRestants > 0; page++) {
-      appelsRestants--;
-      bilan.demandes++;
-      let resultats;
-      try {
-        resultats = await chercherOffresAdzuna({ appId, appKey, motCle, jours, page });
-      } catch (e) {
-        bilan.echecs++;
-        console.warn(`  ⚠️ ${(e as Error).message}`);
-        break;
-      }
-      for (const brute of resultats) {
-        const ligne = transformerOffreAdzuna(brute, vueLe);
-        if (ligne) offres.set(ligne.source_id, ligne);
-        else bilan.ignorees++;
-      }
-      await attendre(ADZUNA_PAUSE_MS);
-      if (resultats.length < 50) break; // dernière page
+  for (const { motCle, page } of planAppelsAdzuna(ADZUNA_MOTS, budget)) {
+    if (termines.has(motCle)) continue;
+    bilan.demandes++;
+    let resultats;
+    try {
+      resultats = await chercherOffresAdzuna({ appId, appKey, motCle, jours, page });
+    } catch (e) {
+      bilan.echecs++;
+      termines.add(motCle);
+      console.warn(`  ⚠️ ${(e as Error).message}`);
+      continue;
     }
+    for (const brute of resultats) {
+      const ligne = transformerOffreAdzuna(brute, vueLe);
+      if (ligne) offres.set(ligne.source_id, ligne);
+      else bilan.ignorees++;
+    }
+    if (resultats.length < 50) termines.add(motCle); // dernière page
+    await attendre(ADZUNA_PAUSE_MS);
   }
-  if (appelsRestants <= 0) console.log("  (limite d'appels Adzuna atteinte pour cette collecte)");
   bilan.lignes = [...offres.values()];
   return bilan;
 }
@@ -124,7 +124,10 @@ async function main() {
   // 2. Adzuna
   const adzunaId = lireCle("ADZUNA_APP_ID", false);
   const adzunaCle = lireCle("ADZUNA_APP_KEY", false);
-  if (veut("adzuna") && adzunaId && adzunaCle) {
+  const adzunaFrequence = Number(process.env.ADZUNA_TOUTES_LES_N_HEURES ?? 1);
+  if (veut("adzuna") && adzunaId && adzunaCle && !doitLancerAdzuna(new Date(vueLe), adzunaFrequence)) {
+    console.log(`Adzuna : pas cette heure-ci (une collecte toutes les ${adzunaFrequence} h, pour le quota).`);
+  } else if (veut("adzuna") && adzunaId && adzunaCle) {
     console.log("Adzuna :");
     try {
       const b = await collecterAdzuna(adzunaId, adzunaCle, vueLe);

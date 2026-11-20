@@ -101,6 +101,23 @@ export function transformerOffreAdzuna(o: OffreAdzuna, vueLe: string): LigneOffr
   };
 }
 
+/** Vrai si Adzuna doit être interrogé à cette heure (une collecte toutes les N heures, pour le quota gratuit). */
+export function doitLancerAdzuna(maintenant: Date, toutesLesNHeures: number): boolean {
+  return toutesLesNHeures <= 1 || maintenant.getUTCHours() % toutesLesNHeures === 0;
+}
+
+/** Ordre des appels : page 1 de chaque mot-clé, puis page 2 de chaque mot-clé, etc., jusqu'au budget. */
+export function planAppelsAdzuna(mots: string[], budget: number): { motCle: string; page: number }[] {
+  const plan: { motCle: string; page: number }[] = [];
+  for (let page = 1; plan.length < budget; page++) {
+    for (const motCle of mots) {
+      if (plan.length >= budget) break;
+      plan.push({ motCle, page });
+    }
+  }
+  return plan;
+}
+
 /** Une page de résultats Adzuna : offres dont le TITRE contient le mot-clé, publiées depuis moins de « jours ». */
 export async function chercherOffresAdzuna(p: {
   appId: string;

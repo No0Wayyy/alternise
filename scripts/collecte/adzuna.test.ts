@@ -1,6 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { transformerOffreAdzuna, type OffreAdzuna } from "./adzuna.ts";
+import { doitLancerAdzuna, planAppelsAdzuna, transformerOffreAdzuna, type OffreAdzuna } from "./adzuna.ts";
+
+test("doitLancerAdzuna : une collecte Adzuna toutes les N heures", () => {
+  assert.equal(doitLancerAdzuna(new Date("2026-11-20T00:17:00Z"), 4), true);
+  assert.equal(doitLancerAdzuna(new Date("2026-11-20T04:17:00Z"), 4), true);
+  assert.equal(doitLancerAdzuna(new Date("2026-11-20T05:17:00Z"), 4), false);
+  assert.equal(doitLancerAdzuna(new Date("2026-11-20T05:17:00Z"), 1), true);
+});
+
+test("planAppelsAdzuna : la page 1 de chaque mot-clé passe avant les pages suivantes", () => {
+  assert.deepEqual(planAppelsAdzuna(["a", "b", "c"], 5), [
+    { motCle: "a", page: 1 },
+    { motCle: "b", page: 1 },
+    { motCle: "c", page: 1 },
+    { motCle: "a", page: 2 },
+    { motCle: "b", page: 2 },
+  ]);
+});
 
 // Offre inventée, avec la même forme qu'une vraie réponse d'Adzuna.
 function exemple(): OffreAdzuna {

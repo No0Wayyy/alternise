@@ -41,6 +41,15 @@ Règles :
 
 Les secteurs et leurs codes métiers sont dans [src/lib/secteurs.ts](src/lib/secteurs.ts).
 
+### Collecte automatique (GitHub Actions)
+
+Le fichier [.github/workflows/collecte.yml](.github/workflows/collecte.yml) lance les tests puis la collecte **chaque heure à hh:17 (UTC)**. Adzuna n'est interrogé qu'une heure sur 4 (quota).
+
+- Voir les collectes : onglet **Actions** du dépôt sur GitHub.
+- Lancer à la main : **Actions > Collecte des offres > Run workflow**.
+- Les clés sont dans **Settings > Secrets and variables > Actions** (jamais dans le code).
+- Attention : sur un dépôt public, GitHub met en pause les tâches planifiées après **60 jours sans activité** sur le dépôt. Il prévient par e-mail ; un clic sur « Enable workflow » les relance.
+
 ## Clés API
 
 Les clés vont dans `.env.local`, qui n'est jamais envoyé sur GitHub.
