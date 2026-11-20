@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* Couleurs d'Alternise, inspirées de la signalétique des transports. */
+:root {
+  --papier: #fafbfc; /* fond */
+  --encre: #18213a; /* texte principal */
+  --gris: #4f5a6e; /* texte secondaire (contraste AA sur le fond) */
+  --bleu: #1d3b8f; /* bleu signalétique : titres, liens */
+  --jaune: #f2c230; /* jaune de ligne : le trait du plan */
+  --filet: #dfe3ea; /* bordures discrètes */
+}
+
+@theme inline {
+  --color-papier: var(--papier);
+  --color-encre: var(--encre);
+  --color-gris: var(--gris);
+  --color-bleu: var(--bleu);
+  --color-jaune: var(--jaune);
+  --color-filet: var(--filet);
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papier: #10172a;
+    --encre: #eef1f6;
+    --gris: #aab3c5;
+    --bleu: #9db4ff;
+    --jaune: #f2c230;
+    --filet: #2a3450;
+  }
+}
+
+body {
+  background: var(--papier);
+  color: var(--encre);
+  font-family: var(--font-sans);
+}
+
+/* Contour bien visible quand on navigue au clavier. */
+:focus-visible {
+  outline: 3px solid var(--jaune);
+  outline-offset: 3px;
+}

@@ -1,15 +1,30 @@
 # Secrets : ne jamais envoyer sur GitHub
 .env
-.env.local
-.env.*.local
+.env*
+!.env.example
+
+# Notes perso de mots de passe : ne jamais publier
+MDP*
+*mot*de*passe*
+*password*
+*.pem
 
 # Dossiers générés
 node_modules/
+.pnp
+.pnp.*
 .next/
 out/
 build/
+coverage/
 .vercel/
+supabase/.temp/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
 # Divers
 .DS_Store
 *.log
+npm-debug.log*
