@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 // Police très lisible, pensée pour les petits écrans et les lecteurs malvoyants.
@@ -23,7 +24,17 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${atkinson.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <footer className="mx-auto w-full max-w-5xl px-4 pb-8 text-sm text-gris sm:px-8">
+          <p className="border-t border-filet pt-4">
+            Alternise : gratuit, sans compte, sans cookies.{" "}
+            <Link href="/confidentialite" className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-encre">
+              Confidentialité
+            </Link>
+          </p>
+        </footer>
+      </body>
     </html>
   );
 }

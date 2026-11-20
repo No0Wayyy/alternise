@@ -107,12 +107,12 @@ export function ChampVilles({ initiales }: { initiales: Ville[] }) {
           {villes.map((v, i) => (
             <li key={`${v.nom}-${v.lat}`}>
               <input type="hidden" name="v" value={encoderVille(v)} />
-              <span className="inline-flex min-h-11 items-center gap-1 rounded-full bg-bleu py-1 pr-1 pl-3 text-papier">
+              <span className="inline-flex min-h-11 items-center gap-1 rounded-full bg-bleu py-0.5 pr-0.5 pl-3 text-papier">
                 {v.nom}
                 <button
                   type="button"
                   onClick={() => retirer(i)}
-                  className="grid size-9 cursor-pointer place-items-center rounded-full hover:bg-papier/20"
+                  className="grid size-11 cursor-pointer place-items-center rounded-full hover:bg-papier/20"
                   aria-label={`Retirer ${v.nom}`}
                 >
                   <IconeFermer className="text-base" />
@@ -147,7 +147,7 @@ export function ChampVilles({ initiales }: { initiales: Ville[] }) {
           onKeyDown={clavier}
           onFocus={() => suggestions.length && setOuvert(true)}
           onBlur={() => setTimeout(() => setOuvert(false), 150)}
-          className="h-12 w-full rounded-xl border border-filet bg-papier pr-3 pl-10 text-base placeholder:text-gris/80 disabled:opacity-60"
+          className="h-12 w-full rounded-xl border border-contour bg-papier pr-3 pl-10 text-base placeholder:text-gris/80 disabled:opacity-60"
         />
       </div>
 

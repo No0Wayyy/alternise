@@ -122,3 +122,15 @@ export const IconeTrain = (p: SVGProps<SVGSVGElement>) => (
     <path d="M16 15h.01" />
   </Icone>
 );
+
+export const IconeMarque = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+  </Icone>
+);
+
+export const IconeCoche = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="M20 6 9 17l-5-5" />
+  </Icone>
+);

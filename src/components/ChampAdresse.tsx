@@ -150,7 +150,7 @@ export function ChampAdresse({ initiale }: { initiale: Ville | null }) {
             onKeyDown={clavier}
             onFocus={() => suggestions.length && setOuvert(true)}
             onBlur={() => setTimeout(() => setOuvert(false), 150)}
-            className="h-12 w-full rounded-xl border border-filet bg-papier pr-3 pl-10 text-base placeholder:text-gris/80"
+            className="h-12 w-full rounded-xl border border-contour bg-papier pr-3 pl-10 text-base placeholder:text-gris/80"
           />
         </div>
       )}

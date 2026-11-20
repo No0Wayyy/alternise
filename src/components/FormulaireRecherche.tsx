@@ -10,9 +10,9 @@ import { ChampAdresse } from "./ChampAdresse";
 import { ChampVilles } from "./ChampVilles";
 import { IconeLoupe } from "./Icones";
 
-const champ = "h-12 w-full rounded-xl border border-filet bg-papier px-3 text-base";
+const champ = "h-12 w-full rounded-xl border border-contour bg-papier px-3 text-base";
 const pastille =
-  "inline-flex min-h-11 items-center rounded-full border border-filet px-4 py-1.5 transition-colors duration-150 peer-checked:border-bleu peer-checked:bg-bleu peer-checked:text-papier peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-jaune hover:border-bleu";
+  "inline-flex min-h-11 items-center rounded-full border border-contour px-4 py-1.5 transition-colors duration-150 peer-checked:border-bleu peer-checked:bg-bleu peer-checked:text-papier peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus hover:border-bleu";
 
 export function FormulaireRecherche({ criteres }: { criteres: Criteres }) {
   // « Où ? » : par ville et rayon, ou par temps de trajet depuis l'adresse de l'étudiant.
@@ -65,7 +65,7 @@ export function FormulaireRecherche({ criteres }: { criteres: Criteres }) {
                     form="aucun" // choix d'affichage seulement : pas envoyé dans l'adresse
                     className="peer sr-only"
                   />
-                  <span className="inline-flex min-h-11 items-center rounded-lg px-3 font-bold text-gris transition-colors duration-150 peer-checked:bg-bleu peer-checked:text-papier peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-jaune">
+                  <span className="inline-flex min-h-11 items-center rounded-lg px-3 font-bold text-gris transition-colors duration-150 peer-checked:bg-bleu peer-checked:text-papier peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus">
                     {nom}
                   </span>
                 </label>
@@ -212,7 +212,7 @@ export function FormulaireRecherche({ criteres }: { criteres: Criteres }) {
           </div>
         </div>
         <p className="mt-2 text-sm text-gris">
-          Distances à vol d'oiseau. Données : arrêts de transport.data.gouv.fr, gares SNCF (licence ODbL).
+          Distances à vol d&apos;oiseau. Données : arrêts de transport.data.gouv.fr, gares SNCF (licence ODbL).
         </p>
       </fieldset>
 

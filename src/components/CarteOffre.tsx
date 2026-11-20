@@ -1,6 +1,7 @@
 // Une offre dans la liste des résultats.
 import type { Offre } from "@/lib/offres";
 import { depuisQuand } from "@/lib/recherche";
+import { BoutonSuivi } from "./BoutonSuivi";
 import { IconeBus, IconeHorloge, IconeLienExterne, IconeLieu, IconeTrain } from "./Icones";
 
 const CONTRATS: Record<string, string> = {
@@ -75,16 +76,21 @@ export function CarteOffre({ offre }: { offre: Offre }) {
       {offre.description && <p className="line-clamp-3 leading-relaxed">{offre.description}</p>}
 
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-        <a
-          href={offre.url_postuler}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl bg-bleu px-5 font-bold text-papier transition-opacity duration-150 hover:opacity-90"
-        >
-          Postuler sur l&apos;offre
-          <IconeLienExterne />
-          <span className="sr-only">(s&apos;ouvre dans un nouvel onglet)</span>
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={offre.url_postuler}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl bg-bleu px-5 font-bold text-papier transition-opacity duration-150 hover:opacity-90"
+          >
+            Postuler sur l&apos;offre
+            <IconeLienExterne />
+            <span className="sr-only">(s&apos;ouvre dans un nouvel onglet)</span>
+          </a>
+          <BoutonSuivi
+            offre={{ id: offre.id, titre: offre.titre, entreprise: offre.entreprise, ville: offre.ville, url: offre.url_postuler }}
+          />
+        </div>
         <Source offre={offre} />
       </div>
     </article>
@@ -101,7 +107,7 @@ function Source({ offre }: { offre: Offre }) {
           href="https://www.adzuna.fr"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-[23px] min-w-[116px] items-center justify-center rounded-md border border-filet px-2 font-bold text-encre underline-offset-4 hover:underline"
+          className="inline-flex min-h-11 min-w-[116px] items-center justify-center rounded-md border border-filet px-2 font-bold text-encre underline-offset-4 hover:underline"
         >
           Adzuna
         </a>

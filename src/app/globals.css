@@ -10,6 +10,8 @@
   --filet: #dfe3ea; /* bordures discrètes */
   --vert: #17663a; /* badge « Nouveau » (contraste AA sur son fond) */
   --vert-fond: #e3f4ea;
+  --contour: #7d8799; /* bord des champs : contraste 3,5:1 (WCAG 1.4.11) */
+  --focus: #946200; /* contour clavier : ambre foncé, 5:1 sur le fond clair */
 }
 
 @theme inline {
@@ -21,6 +23,8 @@
   --color-filet: var(--filet);
   --color-vert: var(--vert);
   --color-vert-fond: var(--vert-fond);
+  --color-contour: var(--contour);
+  --color-focus: var(--focus);
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
 }
 
@@ -34,6 +38,8 @@
     --filet: #2a3450;
     --vert: #8fe0b0;
     --vert-fond: #133524;
+    --contour: #6b7a9c;
+    --focus: #f2c230; /* jaune : 10:1 sur le fond sombre */
   }
 }
 
@@ -53,9 +59,9 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Contour bien visible quand on navigue au clavier. */
+/* Contour bien visible quand on navigue au clavier (couleur --focus : contraste 3:1 minimum). */
 :focus-visible {
-  outline: 3px solid var(--jaune);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 
@@ -105,4 +111,10 @@ body {
   flex: 1;
   height: auto;
   max-height: none;
+}
+
+/* Boutons de la carte (zoom, plein écran) : 44 px, assez grands pour le doigt. */
+.maplibregl-map .maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
 }
