@@ -29,8 +29,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="mx-auto w-full max-w-5xl px-4 pb-8 text-sm text-gris sm:px-8">
           <p className="border-t border-filet pt-4">
             Alternise : gratuit, sans compte, sans cookies.{" "}
+            {/* Liens obligatoires (RGPD, LCEN). */}
             <Link href="/confidentialite" className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-encre">
               Confidentialité
+            </Link>
+            {" · "}
+            <Link href="/mentions-legales" className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-encre">
+              Mentions légales
             </Link>
           </p>
         </footer>
