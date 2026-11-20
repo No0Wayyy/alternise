@@ -15,7 +15,12 @@ Légende : ✅ vérifié sur la doc officielle · ⚠️ à confirmer (doc non l
   - `offres_emploi_partenaires` : France Travail, Météojobs, etc. (~325 000)
   - `recruteurs_lba` : entreprises qui recrutent souvent en alternance (~400 000) → candidatures spontanées
 - Mise à jour des données : quotidienne. ✅
-- Limites de débit : non publiées. ⚠️
+- Limites de débit : non publiées. ⚠️ Constaté le 20/11/2026 : code 429 vers 6 appels/s → rester sous 2 appels/s.
+- Constaté le 20/11/2026 ✅ :
+  - La recherche marche sans point GPS (toute la France) avec seulement `romes=`.
+  - Avec un point GPS, `radius` est limité à 200 km.
+  - Plusieurs codes ROME dans un appel → résultats coupés (150 offres LBA max). Interroger **un code à la fois**.
+  - Pour nos 5 secteurs : environ 4 300 offres au total.
 - CGU ✅ : usage **non lucratif** uniquement ; jeton secret ; ne pas revendre ni transmettre les données.
 
 ## 2. France Travail — Offres d'emploi v2
