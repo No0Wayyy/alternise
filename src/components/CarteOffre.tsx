@@ -1,7 +1,7 @@
 // Une offre dans la liste des résultats.
 import type { Offre } from "@/lib/offres";
 import { depuisQuand } from "@/lib/recherche";
-import { IconeHorloge, IconeLienExterne, IconeLieu } from "./Icones";
+import { IconeBus, IconeHorloge, IconeLienExterne, IconeLieu, IconeTrain } from "./Icones";
 
 const CONTRATS: Record<string, string> = {
   apprentissage: "Apprentissage",
@@ -10,6 +10,12 @@ const CONTRATS: Record<string, string> = {
 };
 
 const km = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+/** 230 m, 1,2 km… (distances arrondies : la position des offres est parfois approximative). */
+export function distanceLisible(metres: number): string {
+  if (metres < 1000) return `${Math.max(10, Math.round(metres / 10) * 10)} m`;
+  return `${km.format(Math.round(metres / 100) / 10)} km`;
+}
+
 const moisAnnee = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
 
 export function CarteOffre({ offre }: { offre: Offre }) {
@@ -52,6 +58,18 @@ export function CarteOffre({ offre }: { offre: Offre }) {
         )}
         <li>{offre.niveau_diplome ?? "Niveau non précisé"}</li>
         {offre.debut_contrat && <li>Début : {moisAnnee.format(new Date(offre.debut_contrat))}</li>}
+        {offre.arret_m !== null && offre.arret_m <= 2000 && (
+          <li className="inline-flex items-center gap-1.5">
+            <IconeBus />
+            Arrêt à {distanceLisible(offre.arret_m)}
+          </li>
+        )}
+        {offre.gare_m !== null && offre.gare_m <= 20000 && (
+          <li className="inline-flex items-center gap-1.5">
+            <IconeTrain />
+            Gare à {distanceLisible(offre.gare_m)}
+          </li>
+        )}
       </ul>
 
       {offre.description && <p className="line-clamp-3 leading-relaxed">{offre.description}</p>}

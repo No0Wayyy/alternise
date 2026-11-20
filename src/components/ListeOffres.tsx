@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { POINTS_MAX, pointsOffres, rechercherOffres, type PointCarte, type Resultats } from "@/lib/offres";
-import { PAR_PAGE, aDesCriteres, liensExternes, urlRecherche, type Criteres } from "@/lib/recherche";
+import { zoneAtteignable } from "@/lib/isochrone";
+import { DUREES, MODES, PAR_PAGE, aDesCriteres, liensExternes, urlRecherche, type Criteres, type Point } from "@/lib/recherche";
 import { CarteDesOffres } from "./CarteDesOffres";
 import { CarteOffre } from "./CarteOffre";
 import { IconeCarte, IconeEcole, IconeLienExterne, IconeListe } from "./Icones";
@@ -12,10 +13,23 @@ const nombre = new Intl.NumberFormat("fr-FR");
 export async function ListeOffres({ criteres: c }: { criteres: Criteres }) {
   // Calculé à chaque visite : « Publiée il y a 2 heures » dépend de l'heure actuelle.
   await connection();
+  // Temps de trajet : on calcule d'abord la zone atteignable (OpenRouteService).
+  let zoneTrajet: Point[] | null = null;
+  if (c.trajet) {
+    try {
+      zoneTrajet = await zoneAtteignable(c.trajet);
+    } catch {
+      return <TrajetIndisponible criteres={c} />;
+    }
+  }
+
   let r: Resultats;
   let points: PointCarte[] = [];
   try {
-    [r, points] = await Promise.all([rechercherOffres(c), c.vue === "carte" ? pointsOffres(c) : []]);
+    [r, points] = await Promise.all([
+      rechercherOffres(c, zoneTrajet),
+      c.vue === "carte" ? pointsOffres(c, zoneTrajet) : [],
+    ]);
   } catch {
     return (
       <p role="alert" className="rounded-2xl border border-filet p-5">
@@ -63,7 +77,7 @@ export async function ListeOffres({ criteres: c }: { criteres: Criteres }) {
             : `${nombre.format(r.total)} offre${r.total > 1 ? "s" : ""}${aDesCriteres(c) ? "" : " récentes"}`}
         </p>
         <ChoixVue criteres={c} />
-        {c.vue === "liste" && c.villes.length > 0 && r.total > 1 && (
+        {c.vue === "liste" && (c.villes.length > 0 || c.trajet) && r.total > 1 && (
           <div className="flex items-center gap-1 text-sm" role="group" aria-label="Trier">
             <span className="text-gris">Trier :</span>
             <LienTri href={urlRecherche(c, { tri: "date", page: 1 })} actif={c.tri === "date"}>
@@ -76,10 +90,21 @@ export async function ListeOffres({ criteres: c }: { criteres: Criteres }) {
         )}
       </div>
 
+      {c.trajet && (
+        <p className="text-sm leading-relaxed text-gris">
+          Offres à moins de {c.trajet.minutes} min {MODES[c.trajet.mode].nom.toLowerCase()} depuis {c.trajet.depart.nom} (calcul
+          approximatif). Calcul :{" "}
+          <a href="https://openrouteservice.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            openrouteservice.org
+          </a>{" "}
+          par HeiGIT, données © OpenStreetMap.
+        </p>
+      )}
+
       {r.total === 0 && <AucuneOffre criteres={c} autreOnglet={r.totalAutreOnglet} />}
 
       {c.vue === "carte" ? (
-        <CarteDesOffres criteres={c} points={points} total={r.total} pointsMax={POINTS_MAX} />
+        <CarteDesOffres criteres={c} zoneTrajet={zoneTrajet} points={points} total={r.total} pointsMax={POINTS_MAX} />
       ) : (
         r.total > 0 && (
         <ul className="grid gap-4">
@@ -180,6 +205,13 @@ function AucuneOffre({ criteres: c, autreOnglet }: { criteres: Criteres; autreOn
     const plusGrand = c.rayon < 30 ? 30 : c.rayon < 50 ? 50 : 100;
     idees.push({ texte: `Élargir le rayon à ${plusGrand} km`, href: urlRecherche(c, { rayon: plusGrand, page: 1 }) });
   }
+  if (c.trajet) {
+    const plusLong = DUREES.find((d) => d > c.trajet!.minutes);
+    if (plusLong)
+      idees.push({ texte: `Allonger le trajet à ${plusLong} min`, href: urlRecherche(c, { trajet: { ...c.trajet, minutes: plusLong }, page: 1 }) });
+  }
+  if (c.arret) idees.push({ texte: "Retirer « arrêt à moins de 500 m »", href: urlRecherche(c, { arret: false, page: 1 }) });
+  if (c.gare) idees.push({ texte: "Retirer le filtre « gare »", href: urlRecherche(c, { gare: null, page: 1 }) });
   if (c.zone) idees.push({ texte: "Retirer la zone dessinée", href: urlRecherche(c, { zone: null, page: 1 }) });
   if (c.q) idees.push({ texte: `Retirer le mot-clé « ${c.q} »`, href: urlRecherche(c, { q: "", page: 1 }) });
   if (c.depuis) idees.push({ texte: "Voir toutes les dates de publication", href: urlRecherche(c, { depuis: null, page: 1 }) });
@@ -225,5 +257,30 @@ function ChercherAilleurs({ criteres }: { criteres: Criteres }) {
         ))}
       </ul>
     </aside>
+  );
+}
+
+/** OpenRouteService ne répond pas (quota du jour atteint, service en pause…). */
+function TrajetIndisponible({ criteres: c }: { criteres: Criteres }) {
+  const depart = c.trajet!.depart;
+  const ville = depart.nom.split(",").pop()?.trim() || depart.nom;
+  const autour = urlRecherche(c, {
+    trajet: null,
+    villes: [{ nom: ville, lat: depart.lat, lon: depart.lon }],
+    rayon: 10,
+    page: 1,
+  });
+  return (
+    <div role="alert" className="grid gap-3 rounded-2xl border border-filet p-5">
+      <p className="font-bold">Le temps de trajet ne peut pas être calculé pour le moment.</p>
+      <p className="text-gris">
+        Le service de calcul est peut-être occupé, ou son quota du jour est atteint. Réessaie plus tard, ou cherche par distance :
+      </p>
+      <p>
+        <Link href={autour} className={bouton}>
+          Chercher à 10 km autour de {ville}
+        </Link>
+      </p>
+    </div>
   );
 }

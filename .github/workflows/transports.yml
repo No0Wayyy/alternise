@@ -1,0 +1,40 @@
+# Arrêts de transport (transport.data.gouv.fr) et gares SNCF : rechargés une fois par mois.
+# Puis la base recalcule, pour chaque offre, la distance à l'arrêt et à la gare les plus proches.
+# Bouton manuel : onglet « Actions » du dépôt > « Arrêts et gares » > « Run workflow ».
+name: Arrêts et gares
+
+on:
+  schedule:
+    - cron: "41 3 2 * *" # le 2 de chaque mois à 3 h 41 (heure UTC), quand peu de monde utilise le site
+  workflow_dispatch: # bouton « Run workflow »
+
+# Jamais en même temps qu'une collecte d'offres.
+concurrency:
+  group: collecte
+  cancel-in-progress: false
+
+# Le robot peut seulement lire le code (moindre privilège).
+permissions:
+  contents: read
+
+jobs:
+  transports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Lancer les tests (on s'arrête s'ils échouent)
+        run: node --test "scripts/**/*.test.ts" "src/**/*.test.ts"
+
+      - name: Charger les arrêts et les gares
+        run: node scripts/transports/index.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

@@ -158,6 +158,10 @@ async function main() {
   const doublons = await base.marquerDoublons();
   console.log(`🔗 Doublons : ${doublons} offres mises à jour`);
 
+  // 5. Accès en transports des nouvelles offres (arrêt et gare les plus proches)
+  const acces = await base.calculerAcces();
+  console.log(`🚏 Accès en transports calculés pour ${acces} offres`);
+
   if (echecSource) process.exitCode = 1;
 }
 

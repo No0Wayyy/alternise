@@ -76,6 +76,8 @@ test("parametresRpc prépare l'appel à la base", () => {
     p_zones: [{ lat: 45.758, lon: 4.835, rayon_km: 30 }],
     p_polygone: null,
     p_ecoles: false,
+    p_arret_max_m: null,
+    p_gare_max_m: null,
     p_tri: "distance",
     p_limite: 30,
     p_decalage: 30,
@@ -153,4 +155,66 @@ test("depuisQuand écrit une date relative en français", () => {
   assert.equal(depuisQuand("2026-11-19T10:00:00Z", maintenant), "hier");
   assert.equal(depuisQuand("2026-11-10T12:00:00Z", maintenant), "il y a 10 jours");
   assert.equal(depuisQuand(null, maintenant), null);
+});
+
+test("un trajet se lit, arrondit l'adresse à ~100 m et remplace villes et zone", () => {
+  const c = lireCriteres({
+    dep: "Rue de la République, Lyon~45.765112~4.835769",
+    m: "velo",
+    min: "30",
+    v: ["Paris~48.85~2.35"],
+    z: "45.7,4.75;45.7,4.95;45.82,4.95",
+    t: "distance",
+  });
+  assert.deepEqual(c.trajet, { depart: { nom: "Rue de la République, Lyon", lat: 45.765, lon: 4.836 }, mode: "velo", minutes: 30 });
+  assert.deepEqual(c.villes, []);
+  assert.equal(c.zone, null);
+  assert.equal(c.tri, "distance");
+  assert.equal(aDesCriteres(c), true);
+  assert.equal(
+    decodeURIComponent(urlRecherche(c)),
+    "/?dep=Rue+de+la+République,+Lyon~45.765~4.836&m=velo&min=30&t=distance",
+  );
+});
+
+test("un trajet mal écrit prend des valeurs sûres", () => {
+  const c = lireCriteres({ dep: "Chez moi~45.7~4.8", m: "fusée", min: "999" });
+  assert.equal(c.trajet?.mode, "pied");
+  assert.equal(c.trajet?.minutes, 20);
+  assert.equal(lireCriteres({ dep: "Nulle part~abc~4.8" }).trajet, null);
+});
+
+test("parametresRpc envoie la zone de trajet et trie depuis l'adresse", () => {
+  const c = lireCriteres({ dep: "Lyon~45.76~4.83", m: "pied", min: "15" });
+  const zone = [
+    { lat: 45.7, lon: 4.8 },
+    { lat: 45.8, lon: 4.8 },
+    { lat: 45.8, lon: 4.9 },
+  ];
+  const p = parametresRpc(c, 30, zone);
+  assert.deepEqual(p.p_polygone, [
+    [4.8, 45.7],
+    [4.8, 45.8],
+    [4.9, 45.8],
+  ]);
+  assert.deepEqual(p.p_zones, [{ lat: 45.76, lon: 4.83, rayon_km: 200 }]);
+});
+
+test("les filtres d'accès en transports se lisent et partent vers la base en mètres", () => {
+  const c = lireCriteres({ ta: "1", g: "5" });
+  assert.equal(c.arret, true);
+  assert.equal(c.gare, 5);
+  assert.equal(urlRecherche(c), "/?ta=1&g=5");
+  const p = parametresRpc(c, 30);
+  assert.equal(p.p_arret_max_m, 500);
+  assert.equal(p.p_gare_max_m, 5000);
+  assert.equal(aDesCriteres(c), true);
+  assert.equal(lireCriteres({ g: "7" }).gare, null);
+  assert.equal(lireCriteres({ ta: "oui" }).arret, false);
+});
+
+test("liensExternes garde seulement la commune du trajet", () => {
+  const l = liensExternes(lireCriteres({ q: "vendeur", dep: "Rue de la République, Lyon~45.76~4.83" }));
+  assert.ok(l[0].url.includes("l=Lyon"), l[0].url);
+  assert.ok(!decodeURIComponent(l[0].url).includes("République"), l[0].url);
 });

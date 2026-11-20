@@ -12,6 +12,7 @@
     "lint": "eslint",
     "test": "node --test \"scripts/**/*.test.ts\" \"src/**/*.test.ts\"",
     "collecte": "node --env-file-if-exists=.env.local scripts/collecte/index.ts",
+    "transports": "node --env-file-if-exists=.env.local scripts/transports/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

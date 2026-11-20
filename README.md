@@ -59,6 +59,14 @@ Le bouton **Liste / Carte** au-dessus des résultats montre les mêmes offres su
 - La zone est écrite dans l'adresse (`z=lat,lon;lat,lon;…`) : une recherche avec zone se partage comme les autres.
 - MapLibre a besoin d'un « worker » (un programme qui prépare la carte en arrière-plan). [scripts/copier-worker-carte.ts](scripts/copier-worker-carte.ts) le copie dans `public/maplibre/` avant `npm run dev` et `npm run build`, tout seul.
 
+## Trajet et accès en transports
+
+- **Temps de trajet** : dans « Où ? », choisir « Temps de trajet », taper son adresse, puis à pied, à vélo ou en voiture, en 10 à 60 min. Le serveur demande à [OpenRouteService](https://openrouteservice.org) la zone atteignable (clé `ORS_API_KEY`, 500 calculs gratuits par jour ; une même zone est gardée 1 jour). L'adresse est gardée sans numéro, position arrondie à ~100 m.
+- **Accès en transports** : arrêt de bus, car, tram ou métro à moins de 500 m, gare SNCF à moins de 2, 5 ou 10 km (distances à vol d'oiseau).
+- Données : [Arrêts de transport en France](https://transport.data.gouv.fr/datasets/arrets-de-transport-en-france) (Licence Ouverte, sans les réseaux scolaires) et [Gares de voyageurs SNCF](https://www.data.gouv.fr/datasets/gares-de-voyageurs-1/) (licence ODbL).
+- Rechargées **le 2 de chaque mois** par [.github/workflows/transports.yml](.github/workflows/transports.yml) (`npm run transports` sur ton PC). La collecte horaire calcule l'accès des nouvelles offres.
+- Limite : le fichier ne dit pas si un bus passe souvent. Une offre placée seulement au centre de sa ville ou de son département a une distance approximative.
+
 ## Clés API
 
 Les clés vont dans `.env.local`, qui n'est jamais envoyé sur GitHub.

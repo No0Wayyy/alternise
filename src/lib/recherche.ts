@@ -18,6 +18,19 @@ export const DEPUIS = [
   { jours: 30, nom: "Moins d'un mois" },
 ] as const;
 
+/** Temps de trajet depuis l'adresse de l'étudiant (calcul OpenRouteService). */
+export const MODES = {
+  pied: { nom: "À pied", profil: "foot-walking" },
+  velo: { nom: "À vélo", profil: "cycling-regular" },
+  voiture: { nom: "En voiture", profil: "driving-car" },
+} as const;
+export type Mode = keyof typeof MODES;
+export const DUREES = [10, 15, 20, 30, 45, 60] as const;
+
+/** Accès en transports : arrêt à moins de 500 m, gare à moins de 2, 5 ou 10 km. */
+export const ARRET_MAX_M = 500;
+export const GARES_KM = [2, 5, 10] as const;
+
 export const PAR_PAGE = 30;
 const VILLES_MAX = 5;
 /** Une zone dessinée sur la carte a de 3 à 30 coins. */
@@ -25,6 +38,7 @@ export const ZONE_COINS_MAX = 30;
 
 export type Ville = { nom: string; lat: number; lon: number };
 export type Point = { lat: number; lon: number };
+export type Trajet = { depart: Ville; mode: Mode; minutes: number };
 export type Criteres = {
   q: string;
   secteurs: Secteur[];
@@ -32,6 +46,12 @@ export type Criteres = {
   rayon: number;
   /** Zone dessinée sur la carte (null = pas de zone). */
   zone: Point[] | null;
+  /** Temps de trajet depuis l'adresse de l'étudiant (null = pas de trajet). Remplace villes et zone. */
+  trajet: Trajet | null;
+  /** Seulement les offres à moins de 500 m d'un arrêt de bus, car, tram ou métro. */
+  arret: boolean;
+  /** Seulement les offres à moins de N km d'une gare (null = peu importe). */
+  gare: number | null;
   niveau: Niveau | null;
   depuis: number | null;
   ecoles: boolean;
@@ -76,10 +96,29 @@ function lireZone(texte: string): Point[] | null {
   return valides ? coins.map(([lat, lon]) => ({ lat, lon })) : null;
 }
 
+/** Arrondi à 3 décimales (environ 100 m) : on ne garde pas l'adresse exacte de l'étudiant. */
+export const arrondiDepart = (n: number) => Math.round(n * 1000) / 1000;
+
+function lireTrajet(p: Parametres): Trajet | null {
+  const depart = lireVille(premier(p.dep));
+  if (!depart) return null;
+  const mode = premier(p.m);
+  const minutes = Number(premier(p.min));
+  return {
+    depart: { nom: depart.nom, lat: arrondiDepart(depart.lat), lon: arrondiDepart(depart.lon) },
+    mode: mode in MODES ? (mode as Mode) : "pied",
+    minutes: (DUREES as readonly number[]).includes(minutes) ? minutes : 20,
+  };
+}
+
 /** Lit les critères de recherche dans l'adresse. Toute valeur inconnue est ignorée. */
 export function lireCriteres(p: Parametres): Criteres {
   const secteurs = tous(p.s).filter((s): s is Secteur => s in SECTEURS);
-  const villes = tous(p.v)
+  const trajet = lireTrajet(p);
+  // Une seule façon de dire « où » : le trajet passe avant les villes et la zone dessinée.
+  const villes = trajet
+    ? []
+    : tous(p.v)
     .map(lireVille)
     .filter((v): v is Ville => v !== null)
     .slice(0, VILLES_MAX);
@@ -88,17 +127,21 @@ export function lireCriteres(p: Parametres): Criteres {
   const depuis = Number(premier(p.d));
   const page = Math.floor(Number(premier(p.p)));
   const vue = premier(p.a) === "carte" ? "carte" : "liste";
+  const gare = Number(premier(p.g));
 
   return {
     q: premier(p.q).trim().slice(0, 100),
     secteurs: [...new Set(secteurs)],
     villes,
     rayon: (RAYONS as readonly number[]).includes(rayon) ? rayon : 20,
-    zone: lireZone(premier(p.z)),
+    zone: trajet ? null : lireZone(premier(p.z)),
+    trajet,
+    arret: premier(p.ta) === "1",
+    gare: (GARES_KM as readonly number[]).includes(gare) ? gare : null,
     niveau: niveau in NIVEAUX ? (niveau as Niveau) : null,
     depuis: DEPUIS.some((d) => d.jours === depuis) ? depuis : null,
     ecoles: premier(p.e) === "1",
-    tri: premier(p.t) === "distance" && villes.length > 0 ? "distance" : "date",
+    tri: premier(p.t) === "distance" && (villes.length > 0 || trajet) ? "distance" : "date",
     vue,
     // La carte montre toutes les offres d'un coup : pas de pages.
     page: vue === "liste" && Number.isFinite(page) && page > 1 ? Math.min(page, 100) : 1,
@@ -107,7 +150,7 @@ export function lireCriteres(p: Parametres): Criteres {
 
 /** Vrai si l'étudiant a précisé quelque chose (sinon on montre les dernières offres). */
 export function aDesCriteres(c: Criteres): boolean {
-  return Boolean(c.q || c.secteurs.length || c.villes.length || c.zone || c.niveau || c.depuis);
+  return Boolean(c.q || c.secteurs.length || c.villes.length || c.zone || c.trajet || c.arret || c.gare || c.niveau || c.depuis);
 }
 
 /** Adresse de la page pour ces critères, avec d'éventuels changements (onglet, tri, page…). */
@@ -119,35 +162,51 @@ export function urlRecherche(c: Criteres, changements: Partial<Criteres> = {}): 
   for (const v of x.villes) u.append("v", encoderVille(v));
   if (x.villes.length) u.set("r", String(x.rayon));
   if (x.zone) u.set("z", encoderZone(x.zone));
+  if (x.trajet) {
+    u.set("dep", encoderVille(x.trajet.depart));
+    u.set("m", x.trajet.mode);
+    u.set("min", String(x.trajet.minutes));
+  }
   if (x.niveau) u.set("n", x.niveau);
   if (x.depuis) u.set("d", String(x.depuis));
+  if (x.arret) u.set("ta", "1");
+  if (x.gare) u.set("g", String(x.gare));
   if (x.ecoles) u.set("e", "1");
-  if (x.tri === "distance" && x.villes.length) u.set("t", "distance");
+  if (x.tri === "distance" && (x.villes.length || x.trajet)) u.set("t", "distance");
   if (x.vue === "carte") u.set("a", "carte");
   else if (x.page > 1) u.set("p", String(x.page));
   const texte = u.toString();
   return texte ? `/?${texte}` : "/";
 }
 
-/** Filtres communs aux fonctions SQL rechercher_offres (la liste) et points_offres (la carte). */
-export function parametresFiltres(c: Criteres) {
+/**
+ * Filtres communs aux fonctions SQL rechercher_offres (la liste) et points_offres (la carte).
+ * zoneTrajet : la zone atteignable calculée par OpenRouteService quand l'étudiant donne un trajet.
+ */
+export function parametresFiltres(c: Criteres, zoneTrajet: Point[] | null = null) {
+  const zones = c.trajet
+    ? [{ lat: c.trajet.depart.lat, lon: c.trajet.depart.lon, rayon_km: 200 }] // sert au tri par distance
+    : c.villes.map((v) => ({ lat: v.lat, lon: v.lon, rayon_km: c.rayon }));
+  const polygone = c.trajet ? zoneTrajet : c.zone;
   return {
     p_secteurs: c.secteurs.length ? c.secteurs : null,
     p_texte: c.q || null,
     p_niveaux: c.niveau ? [NIVEAUX[c.niveau].libelle] : null,
     p_inclure_sans_niveau: true,
     p_depuis_jours: c.depuis,
-    p_zones: c.villes.length ? c.villes.map((v) => ({ lat: v.lat, lon: v.lon, rayon_km: c.rayon })) : null,
+    p_zones: zones.length ? zones : null,
     // PostGIS attend [longitude, latitude].
-    p_polygone: c.zone ? c.zone.map((p) => [p.lon, p.lat]) : null,
+    p_polygone: polygone ? polygone.map((p) => [p.lon, p.lat]) : null,
     p_ecoles: c.ecoles,
+    p_arret_max_m: c.arret ? ARRET_MAX_M : null,
+    p_gare_max_m: c.gare ? c.gare * 1000 : null,
   };
 }
 
 /** Paramètres de la fonction SQL rechercher_offres. */
-export function parametresRpc(c: Criteres, parPage: number) {
+export function parametresRpc(c: Criteres, parPage: number, zoneTrajet: Point[] | null = null) {
   return {
-    ...parametresFiltres(c),
+    ...parametresFiltres(c, zoneTrajet),
     p_tri: c.tri,
     p_limite: parPage,
     p_decalage: (c.page - 1) * parPage,
@@ -158,7 +217,8 @@ export function parametresRpc(c: Criteres, parPage: number) {
 export function liensExternes(c: Criteres): { nom: string; url: string }[] {
   const sujet = c.q || (c.secteurs[0] ? SECTEURS[c.secteurs[0]].nom.toLowerCase() : "");
   const quoi = `alternance ${sujet}`.trim();
-  const ou = c.villes[0]?.nom ?? "";
+  // Pour un trajet, on garde seulement la commune (« Rue X, Lyon » → « Lyon »).
+  const ou = c.villes[0]?.nom ?? c.trajet?.depart.nom.split(",").pop()?.trim() ?? "";
   const avec = (base: string, params: Record<string, string>) => {
     const u = new URLSearchParams(Object.entries(params).filter(([, v]) => v));
     return `${base}?${u.toString()}`;

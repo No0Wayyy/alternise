@@ -33,9 +33,16 @@ const LOCALE = {
   "CooperativeGesturesHandler.MobileHelpText": "Deux doigts pour déplacer la carte",
 };
 
-type Props = { criteres: Criteres; points: PointCarte[]; total: number; pointsMax: number };
+type Props = {
+  criteres: Criteres;
+  /** Zone atteignable en temps de trajet (calculée par ORS), à dessiner à la place de la zone dessinée. */
+  zoneTrajet: Point[] | null;
+  points: PointCarte[];
+  total: number;
+  pointsMax: number;
+};
 
-export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props) {
+export function CarteDesOffres({ criteres: c, zoneTrajet, points, total, pointsMax }: Props) {
   const router = useRouter();
   const cadre = useRef<HTMLDivElement>(null);
   const conteneur = useRef<HTMLDivElement>(null);
@@ -65,7 +72,7 @@ export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props)
         carte = new ml.Map({
           container: conteneur.current,
           style: sombre ? STYLE_SOMBRE : STYLE_CLAIR,
-          bounds: cadrage(c) ?? FRANCE,
+          bounds: cadrage(c, zoneTrajet) ?? FRANCE,
           fitBoundsOptions: { padding: 32 },
           maxZoom: 17,
           // Sur téléphone, un doigt fait défiler la page, deux doigts déplacent la carte.
@@ -93,7 +100,7 @@ export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props)
           }
 
           // Zone déjà choisie (bleu léger), sous les offres.
-          m.addSource("zone", { type: "geojson", data: geoZone(c.zone ?? [], true) });
+          m.addSource("zone", { type: "geojson", data: geoZone(zoneTrajet ?? c.zone ?? [], true) });
           m.addLayer({ id: "zone-fond", type: "fill", source: "zone", paint: { "fill-color": bleu, "fill-opacity": 0.1 } });
           m.addLayer({ id: "zone-trait", type: "line", source: "zone", paint: { "line-color": bleu, "line-width": 2.5 } });
 
@@ -146,6 +153,21 @@ export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props)
             filter: seule as never,
             paint: { "circle-radius": 22, "circle-opacity": 0 },
           });
+
+          // Point de départ du trajet (jaune cerclé de bleu).
+          if (c.trajet) {
+            const { lat, lon } = c.trajet.depart;
+            m.addSource("depart", {
+              type: "geojson",
+              data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } },
+            });
+            m.addLayer({
+              id: "depart",
+              type: "circle",
+              source: "depart",
+              paint: { "circle-color": jaune, "circle-radius": 9, "circle-stroke-width": 3, "circle-stroke-color": bleu },
+            });
+          }
 
           // Zone en cours de dessin (jaune), au-dessus de tout.
           m.addSource("dessin", { type: "geojson", data: geoZone([], false) });
@@ -208,7 +230,7 @@ export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props)
       carte?.remove();
       carteRef.current = null;
     };
-  }, [c, points]);
+  }, [c, zoneTrajet, points]);
 
   // Le dessin en cours s'affiche sur la carte.
   useEffect(() => {
@@ -222,8 +244,8 @@ export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props)
   }, [dessin, etat]);
 
   const chercherDans = (zone: Point[]) => {
-    // La zone remplace les villes : le tri par distance n'a plus de sens.
-    router.push(urlRecherche(c, { zone, villes: [], tri: "date", page: 1 }), { scroll: false });
+    // La zone remplace les villes et le trajet : le tri par distance n'a plus de sens.
+    router.push(urlRecherche(c, { zone, villes: [], trajet: null, tri: "date", page: 1 }), { scroll: false });
   };
 
   const zoneVisible = () => {
@@ -286,7 +308,7 @@ export function CarteDesOffres({ criteres: c, points, total, pointsMax }: Props)
                 : `${coins} coin${coins > 1 ? "s" : ""} posé${coins > 1 ? "s" : ""}. ${
                     coins < 3 ? `Encore ${3 - coins} au minimum.` : coins >= ZONE_COINS_MAX ? "C'est le maximum." : "Valide quand ta zone est prête."
                   }`}
-              {c.villes.length > 0 && " La zone remplacera les villes choisies."}
+              {(c.villes.length > 0 || c.trajet) && " La zone remplacera ta recherche par ville ou par trajet."}
             </p>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => dessin && chercherDans(dessin)} disabled={coins < 3} className={boutonPrincipal}>
@@ -328,9 +350,10 @@ const boutonBase =
 const boutonPrincipal = `${boutonBase} bg-bleu text-papier hover:opacity-90`;
 const boutonSecondaire = `${boutonBase} border border-filet bg-papier hover:border-bleu`;
 
-/** Cadre de départ : la zone dessinée, sinon les villes et leur rayon, sinon la France. */
-function cadrage(c: Criteres): LngLatBoundsLike | null {
+/** Cadre de départ : la zone de trajet ou dessinée, sinon les villes et leur rayon, sinon la France. */
+function cadrage(c: Criteres, zoneTrajet: Point[] | null): LngLatBoundsLike | null {
   const pts: Point[] =
+    zoneTrajet ??
     c.zone ??
     c.villes.flatMap((v) => {
       const dLat = c.rayon / 111;

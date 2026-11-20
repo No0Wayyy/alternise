@@ -1,7 +1,7 @@
 // Récupère les offres dans Supabase, côté serveur, avec la clé publique (lecture seule).
 import "server-only";
 import { cacheLife } from "next/cache";
-import { PAR_PAGE, parametresFiltres, parametresRpc, type Criteres } from "./recherche.ts";
+import { PAR_PAGE, parametresFiltres, parametresRpc, type Criteres, type Point } from "./recherche.ts";
 
 export type Offre = {
   id: number;
@@ -17,6 +17,8 @@ export type Offre = {
   latitude: number | null;
   longitude: number | null;
   distance_km: number | null;
+  arret_m: number | null;
+  gare_m: number | null;
   url_postuler: string;
   source: "lba" | "france_travail" | "adzuna";
   origine: string | null;
@@ -46,21 +48,24 @@ async function appeler<T>(fonction: string, parametres: object): Promise<T> {
   return (await r.json()) as T;
 }
 
-/** Offres de l'onglet demandé, et nombre d'offres de l'autre onglet (entreprises / écoles). */
-export async function rechercherOffres(c: Criteres): Promise<Resultats> {
+/**
+ * Offres de l'onglet demandé, et nombre d'offres de l'autre onglet (entreprises / écoles).
+ * zoneTrajet : zone atteignable calculée par ORS (voir isochrone.ts), quand l'étudiant donne un trajet.
+ */
+export async function rechercherOffres(c: Criteres, zoneTrajet: Point[] | null = null): Promise<Resultats> {
   "use cache";
   cacheLife("minutes"); // les offres ne changent qu'une fois par heure
 
   const [offres, autre] = await Promise.all([
-    appeler<Offre[]>("rechercher_offres", parametresRpc(c, PAR_PAGE)),
-    appeler<Offre[]>("rechercher_offres", parametresRpc({ ...c, ecoles: !c.ecoles, page: 1 }, 1)),
+    appeler<Offre[]>("rechercher_offres", parametresRpc(c, PAR_PAGE, zoneTrajet)),
+    appeler<Offre[]>("rechercher_offres", parametresRpc({ ...c, ecoles: !c.ecoles, page: 1 }, 1, zoneTrajet)),
   ]);
   return { offres, total: offres[0]?.total ?? 0, totalAutreOnglet: autre[0]?.total ?? 0 };
 }
 
 /** Tous les points de la carte pour ces critères (sans les descriptions : réponse légère). */
-export async function pointsOffres(c: Criteres): Promise<PointCarte[]> {
+export async function pointsOffres(c: Criteres, zoneTrajet: Point[] | null = null): Promise<PointCarte[]> {
   "use cache";
   cacheLife("minutes");
-  return appeler<PointCarte[]>("points_offres", parametresFiltres(c));
+  return appeler<PointCarte[]>("points_offres", parametresFiltres(c, zoneTrajet));
 }

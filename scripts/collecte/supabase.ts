@@ -30,6 +30,17 @@ export function baseOffres(urlProjet: string, cleSecrete: string) {
       return Number(await r.json());
     },
 
+    /** Calcule la distance à l'arrêt et à la gare les plus proches pour les nouvelles offres (fonction SQL calculer_acces). */
+    async calculerAcces(tout = false): Promise<number> {
+      const r = await fetch(`${urlProjet.replace(/\/$/, "")}/rest/v1/rpc/calculer_acces`, {
+        method: "POST",
+        headers: entetes,
+        body: JSON.stringify({ p_tout: tout }),
+      });
+      if (!r.ok) throw new Error(`Supabase : calcul des accès refusé, code ${r.status} : ${(await r.text()).slice(0, 300)}`);
+      return Number(await r.json());
+    },
+
     /** Supprime les offres qui correspondent au filtre, et dit combien. */
     async supprimer(filtre: string): Promise<number> {
       const r = await fetch(`${url}?${filtre}`, {
