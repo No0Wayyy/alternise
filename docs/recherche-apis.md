@@ -41,6 +41,13 @@ Légende : ✅ vérifié sur la doc officielle · ⚠️ à confirmer (doc non l
 - Pas de filtre « alternance » : recherche par mot-clé (`what=alternance`). ✅
 - Palier gratuit « pour évaluer l'API » ; quotas visibles dans le compte. ⚠️
 - CGU ✅ : afficher « Adzuna » (au moins 116×23 px) avec un lien vers adzuna.fr sur chaque offre. Usage commercial = licence payante.
+- Constaté le 20/11/2026 ✅ :
+  - `title_only=alternance` cherche dans le titre seulement : ~1 000 offres sur 2 jours, ~8 650 sur 30 jours (tous secteurs).
+  - La recherche plein texte « alternance » ramène des CDI/intérim (le mot est dans la description) → **inutilisable**.
+  - Pièges vus : « hors stage et alternance, Freelance » dans un titre.
+  - ~1 offre sur 4 (la moitié en commerce) est une annonce d'école/CFA → colonne `annonce_ecole`, catégorie à part.
+  - Catégories FR : `GET /jobs/fr/categories` ; beaucoup d'offres mal rangées (`social-work-jobs`, `unknown`) → classement par mots du titre.
+  - Pas d'en-tête de quota dans les réponses ; une panne 503 passagère vue le 20/11.
 
 ## 4. Jooble
 

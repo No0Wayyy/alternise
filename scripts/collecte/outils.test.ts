@@ -1,19 +1,34 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleDoublon, couper, estHorsAlternance, lireAdresse, nettoyerTexte, normaliser, pointGps, secteurDuRome } from "./outils.ts";
+import {
+  cleDoublon,
+  couper,
+  estAnnonceEcole,
+  estHorsAlternance,
+  lireAdresse,
+  nettoyerTexte,
+  normaliser,
+  parleAlternance,
+  pointGps,
+  secteurDuRome,
+  secteurParMotsCles,
+} from "./outils.ts";
 
 test("normaliser enlève accents, majuscules et ponctuation", () => {
   assert.equal(normaliser("  Chargé(e) de COMMUNICATION – H/F "), "charge e de communication h f");
 });
 
 test("cleDoublon est identique pour la même offre écrite différemment", () => {
-  const a = cleDoublon("Commis de cuisine H/F", "Le Bon Resto", "33680");
-  const b = cleDoublon("commis de cuisine (h/f)", "LE BON RESTO", "33680");
+  const a = cleDoublon("Commis de cuisine H/F", "Le Bon Resto");
+  const b = cleDoublon("commis de cuisine (f/h)", "LE BON RESTO");
+  const c = cleDoublon("Commis de cuisine F/H/X", "Le Bon Resto");
   assert.equal(a, b);
+  assert.equal(a, c);
+  assert.equal(a, "commis de cuisine|le bon resto");
 });
 
-test("cleDoublon diffère si la ville change", () => {
-  assert.notEqual(cleDoublon("Vendeur", "Magasin", "75001"), cleDoublon("Vendeur", "Magasin", "69001"));
+test("cleDoublon diffère si l'entreprise change", () => {
+  assert.notEqual(cleDoublon("Vendeur", "Magasin A"), cleDoublon("Vendeur", "Magasin B"));
 });
 
 test("couper garde les textes courts et coupe proprement les longs", () => {
@@ -68,6 +83,39 @@ test("estHorsAlternance garde les vraies offres d'alternance", () => {
   ]) {
     assert.equal(estHorsAlternance(titre), false, titre);
   }
+});
+
+test("estHorsAlternance repère « hors alternance » et le freelance", () => {
+  assert.equal(estHorsAlternance("QA web & mobile 3-6 ans d'expérience hors stage et alternance, Freelance"), true);
+  assert.equal(estHorsAlternance("Développeur freelance"), true);
+});
+
+test("parleAlternance exige un mot d'alternance dans le titre", () => {
+  assert.equal(parleAlternance("Vendeur (H/F) - en alternance"), true);
+  assert.equal(parleAlternance("Apprentie fleuriste"), true);
+  assert.equal(parleAlternance("Contrat pro - assistant commercial"), true);
+  assert.equal(parleAlternance("Technicien de maintenance itinérant"), false);
+});
+
+test("estAnnonceEcole repère les annonces d'écoles et de CFA", () => {
+  assert.equal(estAnnonceEcole("BTS MCO en alternance - Formation rémunérée", "Nuevo CFA"), true);
+  assert.equal(estAnnonceEcole("Devenez expert du tourisme : BTS en alternance - Rentrée 2026", null), true);
+  assert.equal(estAnnonceEcole("Alternance en licence Contactologie", "AÉSIO Santé"), true);
+  assert.equal(estAnnonceEcole("Vendeur en alternance", "ANTEE FORMATION"), true);
+  assert.equal(estAnnonceEcole("Commis de cuisine en alternance", "Le Bon Resto"), false);
+  assert.equal(estAnnonceEcole("Apprenti vendeur H/F", "Décathlon"), false);
+});
+
+test("secteurParMotsCles classe un titre dans les secteurs d'Alternise", () => {
+  assert.equal(secteurParMotsCles("Chargé de communication en alternance"), "communication");
+  assert.equal(secteurParMotsCles("Community manager alternance"), "communication");
+  assert.equal(secteurParMotsCles("Assistant marketing digital - alternance"), "marketing");
+  assert.equal(secteurParMotsCles("Apprenti Boucher alternance H/F"), "commerce");
+  assert.equal(secteurParMotsCles("Employé commercial (h/f) - en alternance"), "commerce");
+  assert.equal(secteurParMotsCles("Réceptionniste hôtellerie - en alternance"), "hotellerie_restauration");
+  assert.equal(secteurParMotsCles("Technicien de maintenance industrielle alternance"), "industrie_maintenance");
+  assert.equal(secteurParMotsCles("Contrat d'alternance AES en FAM"), null);
+  assert.equal(secteurParMotsCles("Développeur web en alternance"), null);
 });
 
 test("secteurDuRome retrouve le secteur d'un code", () => {

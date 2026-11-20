@@ -21,4 +21,5 @@ export type LigneOffre = {
   expire_le: string | null;
   vue_le: string;
   cle_doublon: string;
+  annonce_ecole: boolean;
 };

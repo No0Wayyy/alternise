@@ -11,9 +11,18 @@ export function normaliser(texte: string): string {
     .trim();
 }
 
-/** Clé qui repère une même offre vue sur plusieurs sources : titre + entreprise + code postal. */
-export function cleDoublon(titre: string, entreprise: string | null, codePostal: string | null): string {
-  return `${normaliser(titre)}|${normaliser(entreprise ?? "")}|${codePostal ?? ""}`;
+/**
+ * Clé qui repère une même offre vue sur plusieurs sources : titre + entreprise,
+ * sans les mentions H/F. La base compare ensuite les lieux (moins de 5 km).
+ */
+export function cleDoublon(titre: string, entreprise: string | null): string {
+  const t = normaliser(titre).replace(/\b(h|f|x|nb)\b/g, " ").replace(/\s+/g, " ").trim();
+  return `${t}|${normaliser(entreprise ?? "")}`;
+}
+
+/** Texte en minuscules sans accents, ponctuation gardée (pour les motifs ci-dessous). */
+function simplifier(texte: string): string {
+  return texte.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 
 /** Coupe un texte trop long à la fin d'un mot, avec « … ». */
@@ -63,6 +72,8 @@ export function pointGps(coords: unknown): string | null {
 }
 
 const MOTS_ALTERNANCE = /\b(alternance|alternant|alternante|apprenti|apprentie|apprentissage|contrat pro|professionnalisation)\b/;
+// Toujours hors alternance, même si le mot « alternance » apparaît (« hors stage et alternance »).
+const TOUJOURS_HORS = [/\bhors\b.*\b(stage|alternance)\b/, /\bfreelance\b/];
 const MOTS_HORS_ALTERNANCE = [
   /^\W*stage\b/, // « Stage - … », « Stage en cuisine »
   /\b(offre de|en) stage\b/,
@@ -77,9 +88,74 @@ const MOTS_HORS_ALTERNANCE = [
  * Alternise ne montre que de l'alternance. Un titre qui parle aussi d'alternance est gardé.
  */
 export function estHorsAlternance(titre: string): boolean {
-  const t = titre.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const t = simplifier(titre);
+  if (TOUJOURS_HORS.some((motif) => motif.test(t))) return true;
   if (MOTS_ALTERNANCE.test(t)) return false;
   return MOTS_HORS_ALTERNANCE.some((motif) => motif.test(t));
+}
+
+/** Vrai si le titre dit clairement qu'il s'agit d'alternance (obligatoire pour Adzuna, qui mélange tout). */
+export function parleAlternance(titre: string): boolean {
+  return MOTS_ALTERNANCE.test(simplifier(titre));
+}
+
+const ECOLE_TITRE = [
+  /^\W*(bts|bachelor|master|mba|licence|but|titre (pro|rncp)|cqp|bac pro|formation)\b/, // « BTS MCO en alternance… »
+  /\ben (licence|bts|bachelor|master|but|mba)\b/,
+  /\bformation (en alternance|remuneree|diplomante|gratuite|qualifiante)\b/,
+  /\b(devenez|rentree|admissions? ouvertes?|inscriptions? ouvertes?)\b/,
+];
+const ECOLE_ENTREPRISE =
+  /\b(cfa|ecole|school|campus|formations?|institut|academy|academie|afpa|iscod|ifcdis|studi|ifocop|universite|iut|lycee|greta)\b/;
+
+/** Vrai si l'annonce vient d'une école, d'un CFA ou d'un organisme de formation qui recrute des élèves. */
+export function estAnnonceEcole(titre: string, entreprise: string | null): boolean {
+  const t = simplifier(titre);
+  return ECOLE_TITRE.some((motif) => motif.test(t)) || ECOLE_ENTREPRISE.test(simplifier(entreprise ?? ""));
+}
+
+const MOTS_SECTEURS: [Secteur, RegExp][] = [
+  [
+    "communication",
+    /\b(communication|community|social media|evenementiel|evenementielle|graphiste|graphisme|infographiste|pao|redacteur|redactrice|content|contenus?|relations? presse|attachee? de presse|publicite|publicitaire|medias?|webdesigner|web designer|motion designer?|brand)\b/,
+  ],
+  [
+    "marketing",
+    /\b(marketing|chef de produit|cheffe de produit|product manager|trade|etudes? de marche|category manager|growth|seo|sea|acquisition)\b/,
+  ],
+];
+// Hors des secteurs d'Alternise : informatique, santé, social, BTP, finance, RH, droit, tourisme.
+const HORS_SECTEURS =
+  /\b(informatique|developpeur|developpeuse|data|reseaux?|cyber|devops|tourisme|aide.soignante?|infirmiere?|educat\w*|aes|accompagnante?|sante|social|batiment|plombier|chauffagiste|macon|comptab\w*|paie|ressources humaines|rh|juriste|juridique)\b/;
+const MOTS_SECTEURS_SUITE: [Secteur, RegExp][] = [
+  // Métiers de bouche : rangés dans le commerce (comme dans le ROME).
+  ["commerce", /\b(bouchere?|boulangere?|patissiere?|charcutiere?|poissonniere?|fromagere?|primeur|traiteur)\b/],
+  [
+    "hotellerie_restauration",
+    /\b(cuisiniere?|cuisine|commis|serveur|serveuse|barman|barmaid|restaurant|restauration|hotellerie|hotel|receptionniste|plongeur|chef de rang|maitre d.hotel|gouvernante?|femme de chambre|valet)\b/,
+  ],
+  [
+    "commerce",
+    /\b(vendeur|vendeuse|vente|commercial|commerciale|caissiere?|magasin|boutique|retail|e.?commerce|business developer|developpement commercial|charge.? d.affaires|chef de rayon|chef de secteur|merchandiser|fleuriste|opticien|opticienne|relation client|service client|teleconseill\w*)\b/,
+  ],
+  [
+    "industrie_maintenance",
+    /\b(maintenance|techniciens?|technicienne|electrotechni\w*|electromecani\w*|mecanicien|mecanicienne|mecanique|usinage|usineur|tourneur|fraiseur|soudeur|soudeuse|chaudronn\w*|production|operateur|operatrice|conducteur de ligne|pilote de ligne|automaticien|automatisme|industriel|industrielle|industrie|methodes|frigoriste|plasturgie)\b/,
+  ],
+];
+
+/** Range un titre d'offre dans un secteur d'Alternise grâce à ses mots. Renvoie null si aucun ne colle. */
+export function secteurParMotsCles(titre: string): Secteur | null {
+  const t = simplifier(titre);
+  for (const [secteur, motif] of MOTS_SECTEURS) if (motif.test(t)) return secteur;
+  if (HORS_SECTEURS.test(t)) return null;
+  for (const [secteur, motif] of MOTS_SECTEURS_SUITE) if (motif.test(t)) return secteur;
+  return null;
+}
+
+/** Vrai si le titre appartient clairement à un secteur qu'Alternise ne couvre pas. */
+export function estHorsSecteur(titre: string): boolean {
+  return secteurParMotsCles(titre) === null && HORS_SECTEURS.test(simplifier(titre));
 }
 
 /** Retrouve le secteur Alternise d'un code ROME. */

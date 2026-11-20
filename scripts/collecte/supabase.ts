@@ -19,6 +19,17 @@ export function baseOffres(urlProjet: string, cleSecrete: string) {
       }
     },
 
+    /** Lance la fusion des doublons dans la base (fonction SQL marquer_doublons). */
+    async marquerDoublons(): Promise<number> {
+      const r = await fetch(`${urlProjet.replace(/\/$/, "")}/rest/v1/rpc/marquer_doublons`, {
+        method: "POST",
+        headers: entetes,
+        body: "{}",
+      });
+      if (!r.ok) throw new Error(`Supabase : fusion des doublons refusée, code ${r.status} : ${(await r.text()).slice(0, 300)}`);
+      return Number(await r.json());
+    },
+
     /** Supprime les offres qui correspondent au filtre, et dit combien. */
     async supprimer(filtre: string): Promise<number> {
       const r = await fetch(`${url}?${filtre}`, {

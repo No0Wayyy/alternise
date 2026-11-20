@@ -47,7 +47,14 @@ test("transforme une offre complète", () => {
   assert.equal(o.publiee_le, "2026-11-19T10:00:00.000Z");
   assert.equal(o.expire_le, "2027-01-19T00:00:00.000Z");
   assert.equal(o.vue_le, VUE_LE);
-  assert.equal(o.cle_doublon, "commis de cuisine h f|resto exemple|33000");
+  assert.equal(o.cle_doublon, "commis de cuisine|resto exemple");
+  assert.equal(o.annonce_ecole, false);
+});
+
+test("marque comme annonce d'école une offre déposée par un organisme de formation", () => {
+  const e = exemple();
+  e.is_delegated = true;
+  assert.equal(transformerOffreLba(e, "commerce", VUE_LE)?.annonce_ecole, true);
 });
 
 test("ne garde aucune donnée personnelle ou inutile", () => {

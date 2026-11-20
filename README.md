@@ -30,9 +30,13 @@ npm test
 
 Règles :
 
-- **Alternance uniquement** : une offre sans contrat d'apprentissage ou de professionnalisation est refusée, comme un titre de stage, CDI, CDD, intérim ou job saisonnier.
+- Sources : La Bonne Alternance (tous les métiers des secteurs), Adzuna (titres qui parlent d'alternance). France Travail : à venir.
+- **Alternance uniquement** : une offre sans contrat d'apprentissage ou de professionnalisation est refusée, comme un titre de stage, CDI, CDD, intérim, freelance ou job saisonnier. Chez Adzuna, le titre doit dire « alternance », « apprenti »…
+- **Annonces d'écoles** (CFA, BTS, « Devenez… ») : gardées mais marquées `annonce_ecole`, pour une catégorie à part.
+- **Doublons** : même titre + même entreprise à moins de 5 km → une seule offre affichée (priorité La Bonne Alternance, puis France Travail, puis Adzuna).
+- Adzuna : nombre d'appels limité par collecte (`ADZUNA_PAGES_MAX`), le temps de connaître le quota gratuit. Afficher « Adzuna » avec un lien sur leurs offres (obligatoire).
 - Un métier (code ROME) à la fois, moins de 2 appels par seconde.
-- Les offres expirées sont supprimées. Une offre plus vue depuis 48 h aussi, sauf si plus de 5 % des demandes ont échoué.
+- Les offres expirées sont supprimées. Une offre LBA plus vue depuis 48 h aussi, sauf si plus de 5 % des demandes ont échoué. Une offre Adzuna de plus de 45 jours aussi.
 - On ne garde ni téléphone ni SIRET : seulement ce qui sert à l'étudiant.
 
 Les secteurs et leurs codes métiers sont dans [src/lib/secteurs.ts](src/lib/secteurs.ts).

@@ -2,7 +2,17 @@
 // Doc : https://api.apprentissage.beta.gouv.fr/fr/explorer/recherche-offre
 import type { Secteur } from "../../src/lib/secteurs.ts";
 import type { LigneOffre } from "./types.ts";
-import { attendre, cleDoublon, couper, estHorsAlternance, lireAdresse, nettoyerTexte, pointGps, secteurDuRome } from "./outils.ts";
+import {
+  attendre,
+  cleDoublon,
+  couper,
+  estAnnonceEcole,
+  estHorsAlternance,
+  lireAdresse,
+  nettoyerTexte,
+  pointGps,
+  secteurDuRome,
+} from "./outils.ts";
 
 const URL_RECHERCHE = "https://api.apprentissage.beta.gouv.fr/api/job/v1/search";
 
@@ -25,6 +35,7 @@ export type OffreLba = {
     target_diploma?: { european?: string | null; label?: string | null } | null;
     publication: { creation?: string | null; expiration?: string | null };
   };
+  is_delegated?: boolean | null;
 };
 
 const CONTRATS: Record<string, string> = {
@@ -71,7 +82,9 @@ export function transformerOffreLba(o: OffreLba, secteurDemande: Secteur, vueLe:
     publiee_le: o.offer.publication.creation ?? null,
     expire_le: expiration,
     vue_le: vueLe,
-    cle_doublon: cleDoublon(titre, entreprise, code_postal),
+    cle_doublon: cleDoublon(titre, entreprise),
+    // is_delegated : offre déposée par un organisme de formation (doc LBA).
+    annonce_ecole: o.is_delegated === true || estAnnonceEcole(titre, entreprise),
   };
 }
 
