@@ -5,6 +5,7 @@ import {
   couper,
   estAnnonceEcole,
   estHorsAlternance,
+  estHorsSecteur,
   lireAdresse,
   nettoyerTexte,
   normaliser,
@@ -115,6 +116,10 @@ test("secteurParMotsCles classe un titre dans les secteurs d'Alternise", () => {
   assert.equal(secteurParMotsCles("Réceptionniste hôtellerie - en alternance"), "hotellerie_restauration");
   assert.equal(secteurParMotsCles("Technicien de maintenance industrielle alternance"), "industrie_maintenance");
   assert.equal(secteurParMotsCles("Contrat d'alternance AES en FAM"), null);
+  assert.equal(secteurParMotsCles("Devenez Auxiliaire de Vie en Alternance H/F"), null);
+  assert.equal(estHorsSecteur("Devenez Auxiliaire de Vie en Alternance H/F"), true);
+  assert.equal(estHorsSecteur("Aide à domicile en alternance"), true);
+  assert.equal(estHorsSecteur("Animateur périscolaire - BPJEPS en alternance"), true);
   assert.equal(secteurParMotsCles("Développeur web en alternance"), null);
 });
 

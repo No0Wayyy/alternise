@@ -8,6 +8,8 @@
   --bleu: #1d3b8f; /* bleu signalétique : titres, liens */
   --jaune: #f2c230; /* jaune de ligne : le trait du plan */
   --filet: #dfe3ea; /* bordures discrètes */
+  --vert: #17663a; /* badge « Nouveau » (contraste AA sur son fond) */
+  --vert-fond: #e3f4ea;
 }
 
 @theme inline {
@@ -17,6 +19,8 @@
   --color-bleu: var(--bleu);
   --color-jaune: var(--jaune);
   --color-filet: var(--filet);
+  --color-vert: var(--vert);
+  --color-vert-fond: var(--vert-fond);
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
 }
 
@@ -28,6 +32,18 @@
     --bleu: #9db4ff;
     --jaune: #f2c230;
     --filet: #2a3450;
+    --vert: #8fe0b0;
+    --vert-fond: #133524;
+  }
+}
+
+/* Moins d'animations si l'étudiant l'a demandé à son appareil. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 

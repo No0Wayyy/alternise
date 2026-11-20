@@ -1,90 +1,66 @@
-// Page d'accueil (étape 2 du MVP) : présente le site en attendant la recherche.
+// Page d'accueil = page de recherche. L'adresse contient les critères : /?q=vendeur&v=Lyon~45.76~4.83&r=20
+import { Suspense } from "react";
+import { FormulaireRecherche } from "@/components/FormulaireRecherche";
+import { ListeOffres } from "@/components/ListeOffres";
+import { Presentation } from "@/components/Presentation";
+import { aDesCriteres, lireCriteres, urlRecherche } from "@/lib/recherche";
 
-const arrets = [
-  {
-    titre: "Choisis ton métier",
-    texte: "Par secteur ou par métier, avec le niveau de diplôme qui te correspond.",
-  },
-  {
-    titre: "Trace tes zones",
-    texte: "Plusieurs villes avec un rayon en km, ou une zone dessinée sur la carte.",
-  },
-  {
-    titre: "Fixe ton temps de trajet",
-    texte: "À pied, à vélo, près d'un arrêt de bus ou d'une gare.",
-  },
-  {
-    titre: "Postule sur l'offre d'origine",
-    texte: "Un clic t'amène sur l'annonce. Tu suis tes candidatures ici.",
-  },
-];
+const CRITERES_VIDES = lireCriteres({});
 
-export default function Accueil() {
+export default function Accueil(props: PageProps<"/">) {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10 sm:px-8 sm:py-16">
-      <header className="mb-12 flex items-center gap-3">
-        {/* Logo : un arrêt sur la ligne */}
-        <span
-          aria-hidden="true"
-          className="grid size-8 place-items-center rounded-full bg-jaune"
-        >
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-6 sm:px-8 sm:py-10">
+      <header className="flex items-center gap-3">
+        <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-jaune">
           <span className="size-3 rounded-full bg-bleu" />
         </span>
-        <span className="text-xl font-extrabold tracking-tight text-bleu">
-          Alternise
-        </span>
+        <span className="text-xl font-extrabold tracking-tight text-bleu">Alternise</span>
       </header>
 
-      <div className="grid gap-12 md:grid-cols-[1.1fr_1fr] md:gap-16">
-        <section aria-labelledby="titre">
-          <h1
-            id="titre"
-            className="text-[2.6rem] leading-[1.05] font-extrabold tracking-tight text-balance sm:text-6xl"
-          >
-            Ton alternance, à portée de trajet.
-          </h1>
-          <p className="mt-6 max-w-[34ch] text-lg leading-relaxed text-gris">
-            Alternise réunit les offres de La Bonne Alternance, France Travail
-            et Adzuna au même endroit. Tu filtres selon ton trajet, puis tu
-            postules directement.
-          </p>
-          <p className="mt-8 inline-flex items-center gap-2 rounded-xl border border-filet px-4 py-2 text-sm text-gris">
-            <span aria-hidden="true" className="size-2 rounded-full bg-jaune" />
-            Site en construction : la recherche arrive bientôt.
-          </p>
-        </section>
-
-        <section aria-labelledby="comment">
-          <h2 id="comment" className="mb-6 text-lg font-bold text-bleu">
-            Comment ça marche
-          </h2>
-          {/* Le plan de ligne : un trait jaune qui relie les étapes. */}
-          <ol className="relative">
-            {arrets.map((arret, i) => (
-              <li key={arret.titre} className="relative flex gap-5 pb-8 last:pb-0">
-                {i < arrets.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-4 left-[11px] h-full w-[6px] bg-jaune"
-                  />
-                )}
-                <span
-                  aria-hidden="true"
-                  className="relative z-10 mt-0.5 size-7 shrink-0 rounded-full border-[6px] border-jaune bg-papier"
-                />
-                <div>
-                  <h3 className="text-lg leading-snug font-bold">{arret.titre}</h3>
-                  <p className="mt-1 leading-relaxed text-gris">{arret.texte}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+      <div>
+        <h1 className="text-3xl leading-[1.1] font-extrabold tracking-tight text-balance sm:text-5xl">
+          Ton alternance, à portée de trajet.
+        </h1>
+        <p className="mt-3 max-w-[60ch] text-lg leading-relaxed text-gris">
+          Les offres de La Bonne Alternance, France Travail et Adzuna au même endroit. Gratuit, sans compte.
+        </p>
       </div>
 
-      <footer className="mt-auto pt-16 text-sm text-gris">
-        Gratuit et sans compte.
-      </footer>
+      {/* Le formulaire vide s'affiche tout de suite ; la vraie recherche arrive juste après. */}
+      <Suspense
+        fallback={
+          <>
+            <FormulaireRecherche criteres={CRITERES_VIDES} />
+            <Squelette />
+          </>
+        }
+      >
+        <Recherche searchParams={props.searchParams} />
+      </Suspense>
     </main>
+  );
+}
+
+async function Recherche({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
+  const criteres = lireCriteres(await searchParams);
+  const cle = urlRecherche(criteres);
+  return (
+    <>
+      <FormulaireRecherche key={`formulaire-${cle}`} criteres={criteres} />
+      <Suspense key={`resultats-${cle}`} fallback={<Squelette />}>
+        <ListeOffres criteres={criteres} />
+      </Suspense>
+      {!aDesCriteres(criteres) && <Presentation />}
+    </>
+  );
+}
+
+function Squelette() {
+  return (
+    <div aria-busy="true" aria-label="Chargement des offres" className="grid gap-4">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="h-44 animate-pulse rounded-2xl border border-filet bg-filet/40" />
+      ))}
+    </div>
   );
 }

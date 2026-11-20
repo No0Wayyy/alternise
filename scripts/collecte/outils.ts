@@ -124,9 +124,9 @@ const MOTS_SECTEURS: [Secteur, RegExp][] = [
     /\b(marketing|chef de produit|cheffe de produit|product manager|trade|etudes? de marche|category manager|growth|seo|sea|acquisition)\b/,
   ],
 ];
-// Hors des secteurs d'Alternise : informatique, santé, social, BTP, finance, RH, droit, tourisme.
+// Hors des secteurs d'Alternise : informatique, santé, social, aide à la personne, animation, BTP, finance, RH, droit, tourisme.
 const HORS_SECTEURS =
-  /\b(informatique|developpeur|developpeuse|data|reseaux?|cyber|devops|tourisme|aide.soignante?|infirmiere?|educat\w*|aes|accompagnante?|sante|social|batiment|plombier|chauffagiste|macon|comptab\w*|paie|ressources humaines|rh|juriste|juridique)\b/;
+  /\b(informatique|developpeur|developpeuse|data|reseaux?|cyber|devops|tourisme|aide.soignante?|infirmiere?|educat\w*|aes|accompagnante?|auxiliaire|aide a domicile|petite enfance|puericult\w*|animatrice|animateur|periscolaire|bpjeps|ambulanci\w*|pharmacie|sante|social|batiment|plombier|chauffagiste|macon|comptab\w*|paie|ressources humaines|rh|juriste|juridique)\b/;
 const MOTS_SECTEURS_SUITE: [Secteur, RegExp][] = [
   // Métiers de bouche : rangés dans le commerce (comme dans le ROME).
   ["commerce", /\b(bouchere?|boulangere?|patissiere?|charcutiere?|poissonniere?|fromagere?|primeur|traiteur)\b/],
