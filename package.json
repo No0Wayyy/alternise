@@ -2,11 +2,18 @@
   "name": "alternise",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test scripts/",
+    "collecte": "node --env-file-if-exists=.env.local scripts/collecte/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.18"
   },
   "dependencies": {
     "next": "16.4.6",
