@@ -28,3 +28,6 @@ next-env.d.ts
 .DS_Store
 *.log
 npm-debug.log*
+
+# Copie automatique du worker de la carte (voir scripts/copier-worker-carte.ts)
+public/maplibre/

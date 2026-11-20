@@ -4,7 +4,7 @@
 import Form from "next/form";
 import Link from "next/link";
 import { SECTEURS } from "@/lib/secteurs";
-import { DEPUIS, NIVEAUX, RAYONS, type Criteres } from "@/lib/recherche";
+import { DEPUIS, NIVEAUX, RAYONS, encoderZone, urlRecherche, type Criteres } from "@/lib/recherche";
 import { ChampVilles } from "./ChampVilles";
 import { IconeLoupe } from "./Icones";
 
@@ -55,6 +55,21 @@ export function FormulaireRecherche({ criteres }: { criteres: Criteres }) {
         </div>
       </div>
 
+      {criteres.zone && (
+        <p className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-jaune/15 px-4 py-2">
+          <span>
+            <strong>Zone dessinée</strong> sur la carte : seules les offres à l&apos;intérieur sont gardées.
+          </span>
+          <Link
+            href={urlRecherche(criteres, { zone: null, page: 1 })}
+            className="inline-flex min-h-11 items-center text-bleu underline underline-offset-4"
+          >
+            Retirer la zone
+          </Link>
+          <input type="hidden" name="z" value={encoderZone(criteres.zone)} />
+        </p>
+      )}
+
       <fieldset>
         <legend className="mb-2 font-bold">Secteurs</legend>
         <div className="flex flex-wrap gap-2">
@@ -104,9 +119,10 @@ export function FormulaireRecherche({ criteres }: { criteres: Criteres }) {
         </div>
       </div>
 
-      {/* On garde l'onglet (entreprises / écoles) et le tri choisis. */}
+      {/* On garde l'onglet (entreprises / écoles), le tri et la vue (liste / carte) choisis. */}
       {criteres.ecoles && <input type="hidden" name="e" value="1" />}
       {criteres.tri === "distance" && <input type="hidden" name="t" value="distance" />}
+      {criteres.vue === "carte" && <input type="hidden" name="a" value="carte" />}
 
       <div className="flex flex-wrap items-center gap-4">
         <button

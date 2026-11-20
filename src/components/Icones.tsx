@@ -63,3 +63,38 @@ export const IconeEcole = (p: SVGProps<SVGSVGElement>) => (
     <path d="M6 12v5c3 2 9 2 12 0v-5" />
   </Icone>
 );
+
+export const IconeListe = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="M8 6h13" />
+    <path d="M8 12h13" />
+    <path d="M8 18h13" />
+    <path d="M3 6h.01" />
+    <path d="M3 12h.01" />
+    <path d="M3 18h.01" />
+  </Icone>
+);
+
+export const IconeCarte = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="M14.1 6.1 9.9 3.9a2 2 0 0 0-1.8 0L3.6 6.2A1 1 0 0 0 3 7.1v12.3a1 1 0 0 0 1.4.9l3.7-1.9a2 2 0 0 1 1.8 0l4.2 2.2a2 2 0 0 0 1.8 0l4.5-2.3a1 1 0 0 0 .6-.9V5.1a1 1 0 0 0-1.4-.9l-3.7 1.9a2 2 0 0 1-1.8 0Z" />
+    <path d="M15 6v15" />
+    <path d="M9 3v15" />
+  </Icone>
+);
+
+export const IconeCrayon = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5Z" />
+    <path d="m15 5 4 4" />
+  </Icone>
+);
+
+export const IconeCadre = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+  </Icone>
+);

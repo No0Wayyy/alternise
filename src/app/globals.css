@@ -58,3 +58,51 @@ body {
   outline: 3px solid var(--jaune);
   outline-offset: 3px;
 }
+
+/* Carte : la petite fiche d'une offre suit les couleurs du site (clair ou sombre).
+   « .maplibregl-map » devant : nos règles l'emportent sur celles de MapLibre, chargées après. */
+.maplibregl-map .maplibregl-popup-content {
+  background: var(--papier);
+  color: var(--encre);
+  border-radius: 1rem;
+  padding: 1rem 2.75rem 1rem 1rem;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+}
+.maplibregl-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--papier);
+}
+.maplibregl-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--papier);
+}
+.maplibregl-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--papier);
+}
+.maplibregl-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--papier);
+}
+/* Bouton « fermer » assez grand pour le doigt (44 px). */
+.maplibregl-map .maplibregl-popup-close-button {
+  width: 44px;
+  height: 44px;
+  font-size: 1.5rem;
+  color: var(--gris);
+  border-radius: 0 1rem 0 0.75rem;
+}
+/* Carte en plein écran : la barre d'outils reste au-dessus, la carte prend le reste. */
+.cadre-carte:fullscreen {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background: var(--papier);
+}
+.cadre-carte:fullscreen .zone-carte {
+  flex: 1;
+  height: auto;
+  max-height: none;
+}

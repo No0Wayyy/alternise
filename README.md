@@ -50,6 +50,15 @@ Le fichier [.github/workflows/collecte.yml](.github/workflows/collecte.yml) lanc
 - Les clés sont dans **Settings > Secrets and variables > Actions** (jamais dans le code).
 - Attention : sur un dépôt public, GitHub met en pause les tâches planifiées après **60 jours sans activité** sur le dépôt. Il prévient par e-mail ; un clic sur « Enable workflow » les relance.
 
+## Carte des offres
+
+Le bouton **Liste / Carte** au-dessus des résultats montre les mêmes offres sur une carte.
+
+- Carte : [MapLibre](https://maplibre.org) (libre) et fonds de carte [OpenFreeMap](https://openfreemap.org) (gratuits, sans clé). Les crédits OpenStreetMap s'affichent en bas de la carte.
+- **Dessiner une zone** : on touche la carte pour poser 3 à 30 coins. **Chercher dans la zone visible** fait la même chose avec un rectangle (pratique au clavier).
+- La zone est écrite dans l'adresse (`z=lat,lon;lat,lon;…`) : une recherche avec zone se partage comme les autres.
+- MapLibre a besoin d'un « worker » (un programme qui prépare la carte en arrière-plan). [scripts/copier-worker-carte.ts](scripts/copier-worker-carte.ts) le copie dans `public/maplibre/` avant `npm run dev` et `npm run build`, tout seul.
+
 ## Clés API
 
 Les clés vont dans `.env.local`, qui n'est jamais envoyé sur GitHub.
@@ -57,4 +66,4 @@ La liste des clés et où les créer : [docs/recherche-apis.md](docs/recherche-a
 
 ## Technique
 
-Next.js 16, TypeScript, Tailwind CSS 4, Supabase (Postgres + PostGIS), hébergement Vercel.
+Next.js 16, TypeScript, Tailwind CSS 4, Supabase (Postgres + PostGIS), MapLibre + OpenFreeMap, hébergement Vercel.

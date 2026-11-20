@@ -20,17 +20,23 @@ export const DEPUIS = [
 
 export const PAR_PAGE = 30;
 const VILLES_MAX = 5;
+/** Une zone dessinée sur la carte a de 3 à 30 coins. */
+export const ZONE_COINS_MAX = 30;
 
 export type Ville = { nom: string; lat: number; lon: number };
+export type Point = { lat: number; lon: number };
 export type Criteres = {
   q: string;
   secteurs: Secteur[];
   villes: Ville[];
   rayon: number;
+  /** Zone dessinée sur la carte (null = pas de zone). */
+  zone: Point[] | null;
   niveau: Niveau | null;
   depuis: number | null;
   ecoles: boolean;
   tri: "date" | "distance";
+  vue: "liste" | "carte";
   page: number;
 };
 
@@ -54,6 +60,22 @@ function lireVille(texte: string): Ville | null {
   return { nom: nom.trim().slice(0, 80), lat: la, lon: lo };
 }
 
+/** Une zone s'écrit « lat,lon;lat,lon;… » dans l'adresse, arrondie à 4 décimales (environ 10 m). */
+export function encoderZone(zone: Point[]): string {
+  const arrondi = (n: number) => String(Math.round(n * 1e4) / 1e4);
+  return zone.map((p) => `${arrondi(p.lat)},${arrondi(p.lon)}`).join(";");
+}
+
+function lireZone(texte: string): Point[] | null {
+  if (!texte) return null;
+  const coins = texte.split(";").map((c) => c.split(",").map(Number));
+  if (coins.length < 3 || coins.length > ZONE_COINS_MAX) return null;
+  const valides = coins.every(
+    (c) => c.length === 2 && c.every(Number.isFinite) && Math.abs(c[0]) <= 90 && Math.abs(c[1]) <= 180,
+  );
+  return valides ? coins.map(([lat, lon]) => ({ lat, lon })) : null;
+}
+
 /** Lit les critères de recherche dans l'adresse. Toute valeur inconnue est ignorée. */
 export function lireCriteres(p: Parametres): Criteres {
   const secteurs = tous(p.s).filter((s): s is Secteur => s in SECTEURS);
@@ -65,23 +87,27 @@ export function lireCriteres(p: Parametres): Criteres {
   const niveau = premier(p.n);
   const depuis = Number(premier(p.d));
   const page = Math.floor(Number(premier(p.p)));
+  const vue = premier(p.a) === "carte" ? "carte" : "liste";
 
   return {
     q: premier(p.q).trim().slice(0, 100),
     secteurs: [...new Set(secteurs)],
     villes,
     rayon: (RAYONS as readonly number[]).includes(rayon) ? rayon : 20,
+    zone: lireZone(premier(p.z)),
     niveau: niveau in NIVEAUX ? (niveau as Niveau) : null,
     depuis: DEPUIS.some((d) => d.jours === depuis) ? depuis : null,
     ecoles: premier(p.e) === "1",
     tri: premier(p.t) === "distance" && villes.length > 0 ? "distance" : "date",
-    page: Number.isFinite(page) && page > 1 ? Math.min(page, 100) : 1,
+    vue,
+    // La carte montre toutes les offres d'un coup : pas de pages.
+    page: vue === "liste" && Number.isFinite(page) && page > 1 ? Math.min(page, 100) : 1,
   };
 }
 
 /** Vrai si l'étudiant a précisé quelque chose (sinon on montre les dernières offres). */
 export function aDesCriteres(c: Criteres): boolean {
-  return Boolean(c.q || c.secteurs.length || c.villes.length || c.niveau || c.depuis);
+  return Boolean(c.q || c.secteurs.length || c.villes.length || c.zone || c.niveau || c.depuis);
 }
 
 /** Adresse de la page pour ces critères, avec d'éventuels changements (onglet, tri, page…). */
@@ -92,17 +118,19 @@ export function urlRecherche(c: Criteres, changements: Partial<Criteres> = {}): 
   for (const s of x.secteurs) u.append("s", s);
   for (const v of x.villes) u.append("v", encoderVille(v));
   if (x.villes.length) u.set("r", String(x.rayon));
+  if (x.zone) u.set("z", encoderZone(x.zone));
   if (x.niveau) u.set("n", x.niveau);
   if (x.depuis) u.set("d", String(x.depuis));
   if (x.ecoles) u.set("e", "1");
   if (x.tri === "distance" && x.villes.length) u.set("t", "distance");
-  if (x.page > 1) u.set("p", String(x.page));
+  if (x.vue === "carte") u.set("a", "carte");
+  else if (x.page > 1) u.set("p", String(x.page));
   const texte = u.toString();
   return texte ? `/?${texte}` : "/";
 }
 
-/** Paramètres de la fonction SQL rechercher_offres. */
-export function parametresRpc(c: Criteres, parPage: number) {
+/** Filtres communs aux fonctions SQL rechercher_offres (la liste) et points_offres (la carte). */
+export function parametresFiltres(c: Criteres) {
   return {
     p_secteurs: c.secteurs.length ? c.secteurs : null,
     p_texte: c.q || null,
@@ -110,7 +138,16 @@ export function parametresRpc(c: Criteres, parPage: number) {
     p_inclure_sans_niveau: true,
     p_depuis_jours: c.depuis,
     p_zones: c.villes.length ? c.villes.map((v) => ({ lat: v.lat, lon: v.lon, rayon_km: c.rayon })) : null,
+    // PostGIS attend [longitude, latitude].
+    p_polygone: c.zone ? c.zone.map((p) => [p.lon, p.lat]) : null,
     p_ecoles: c.ecoles,
+  };
+}
+
+/** Paramètres de la fonction SQL rechercher_offres. */
+export function parametresRpc(c: Criteres, parPage: number) {
+  return {
+    ...parametresFiltres(c),
     p_tri: c.tri,
     p_limite: parPage,
     p_decalage: (c.page - 1) * parPage,

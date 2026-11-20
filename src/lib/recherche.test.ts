@@ -74,6 +74,7 @@ test("parametresRpc prépare l'appel à la base", () => {
     p_inclure_sans_niveau: true,
     p_depuis_jours: 7,
     p_zones: [{ lat: 45.758, lon: 4.835, rayon_km: 30 }],
+    p_polygone: null,
     p_ecoles: false,
     p_tri: "distance",
     p_limite: 30,
@@ -83,6 +84,41 @@ test("parametresRpc prépare l'appel à la base", () => {
   assert.equal(vide.p_secteurs, null);
   assert.equal(vide.p_zones, null);
   assert.equal(vide.p_niveaux, null);
+  assert.equal(vide.p_polygone, null);
+});
+
+test("une zone dessinée se lit, se réécrit et part vers la base en [lon, lat]", () => {
+  const c = lireCriteres({ z: "45.7,4.75;45.7,4.95;45.82,4.95" });
+  assert.deepEqual(c.zone, [
+    { lat: 45.7, lon: 4.75 },
+    { lat: 45.7, lon: 4.95 },
+    { lat: 45.82, lon: 4.95 },
+  ]);
+  assert.equal(urlRecherche(c), "/?z=45.7%2C4.75%3B45.7%2C4.95%3B45.82%2C4.95");
+  assert.deepEqual(parametresRpc(c, 30).p_polygone, [
+    [4.75, 45.7],
+    [4.95, 45.7],
+    [4.95, 45.82],
+  ]);
+  assert.equal(aDesCriteres(c), true);
+  // Arrondi à 4 décimales dans l'adresse.
+  const fin = urlRecherche({ ...c, zone: [{ lat: 45.123456, lon: 4.987654 }, ...c.zone!.slice(1)] });
+  assert.ok(decodeURIComponent(fin).includes("45.1235,4.9877;"), fin);
+});
+
+test("une zone invalide est ignorée", () => {
+  for (const z of ["45.7,4.75;45.7,4.95", "a,b;c,d;e,f", "95,4;45,4;45,5", "45,4,1;45,5;46,5", Array(31).fill("45,4").join(";")]) {
+    assert.equal(lireCriteres({ z }).zone, null, z);
+  }
+});
+
+test("la vue carte se garde dans l'adresse et n'a pas de pages", () => {
+  const c = lireCriteres({ q: "vendeur", a: "carte", p: "3" });
+  assert.equal(c.vue, "carte");
+  assert.equal(c.page, 1);
+  assert.equal(urlRecherche(c), "/?q=vendeur&a=carte");
+  assert.equal(urlRecherche(c, { vue: "liste" }), "/?q=vendeur");
+  assert.equal(lireCriteres({ a: "autre" }).vue, "liste");
 });
 
 test("aDesCriteres dit si l'étudiant a lancé une recherche", () => {
