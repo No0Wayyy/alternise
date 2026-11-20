@@ -30,7 +30,7 @@ jobs:
           node-version: 24
 
       - name: Lancer les tests (on s'arrête s'ils échouent)
-        run: node --test scripts/
+        run: node --test "scripts/**/*.test.ts"
 
       - name: Collecter les offres
         run: node scripts/collecte/index.ts
